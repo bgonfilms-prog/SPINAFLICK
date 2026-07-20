@@ -25,9 +25,25 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080`.
 
-## Deploy free
+## Secure deployment on Vercel
 
-Upload this folder to GitHub and deploy with GitHub Pages, Netlify, or Vercel. No build command is required.
+This version uses a Vercel serverless function for TMDB searches. The browser calls `/api/movies`; the function adds the TMDB bearer token on the server, so the credential is not included in the downloadable JavaScript.
+
+1. Upload this folder to a GitHub repository.
+2. In Vercel, choose **Add New → Project** and import that repository.
+3. Leave the Framework Preset as **Other** and deploy with the default settings.
+4. Open the Vercel project’s **Settings → Environment Variables**.
+5. Add an environment variable named `TMDB_READ_ACCESS_TOKEN` and paste your TMDB API Read Access Token as its value.
+6. Apply it to Production and Preview, save it, and redeploy the project.
+7. Open the generated Vercel URL. Movie suggestions should now appear as you type.
+
+Do not put the real token in `app-config.js`, `.env.example`, GitHub, or any browser-delivered file.
+
+For local testing with Vercel CLI, copy `.env.example` to `.env.local`, enter your token, and run:
+
+```bash
+npx vercel dev
+```
 
 ## Enable live syncing for both partners
 
@@ -35,20 +51,7 @@ Upload this folder to GitHub and deploy with GitHub Pages, Netlify, or Vercel. N
 2. Add a Web App in Firebase.
 3. Enable Firestore Database.
 4. Copy the Firebase web configuration into `firebase-config.js`.
-5. For a private two-person app, start with these Firestore rules and tighten them later if desired:
-
-```txt
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /rooms/{roomId} {
-      allow read, write: if true;
-    }
-  }
-}
-```
-
-For stronger privacy, add Firebase Authentication and rules that restrict each room to invited users.
+5. Add Firebase Authentication and restrict Firestore access to your two accounts before storing anything sensitive.
 
 ## Share behavior
 
@@ -57,13 +60,17 @@ For stronger privacy, add Firebase Authentication and rules that restrict each r
 
 ## Password protection
 
-The app now opens behind a shared access-code screen and can remember trusted devices.
+The app opens behind a shared access-code screen and can remember trusted devices.
 
 1. Open `app-config.js`.
 2. Replace `movie-night` with the access code you and your partner want to use.
-3. Upload the changed files to your hosting provider.
+3. Deploy the changed files.
 4. Share the website link and send the access code separately.
 
 The lock button in the top-right immediately locks the app again.
 
-Important: GitHub Pages and other static hosts cannot provide true server-side password security. This access screen prevents casual access, but a technically knowledgeable person can inspect the site's source files. For stronger security, enable Firebase Authentication and restrict Firestore access to your two accounts.
+Important: the current access-code screen is still a client-side privacy gate. The TMDB token is protected by the serverless function, but true user-level app security requires Firebase Authentication or another server-side login system.
+
+## Movie title autocomplete
+
+Autocomplete now calls the included `/api/movies` serverless function. If the environment variable is missing or the service is temporarily unavailable, the app falls back to its built-in popular-title list and titles already saved on the wheel.

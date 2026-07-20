@@ -15,6 +15,8 @@ const state = {
   room: null,
   firestore: null,
   unsubscribe: null,
+  selectedSuggestion: null,
+  suggestionAbort: null,
 };
 
 const palette = ['#8f7cff','#ff7189','#54d6c7','#ffcf5c','#72a7ff','#ff9b61','#9bdc68','#d98cff'];
@@ -205,35 +207,123 @@ function parseBulkTitles(value = '') {
 }
 
 function switchAddMode(mode) {
-  
-$('unlockForm').addEventListener('submit', (event) => {
-  event.preventDefault();
-  const entered = $('passwordInput').value;
-  if (entered !== appConfig.accessCode) {
-    $('lockError').textContent = 'That access code is not correct.';
-    $('passwordInput').select();
-    return;
-  }
-  if ($('rememberDevice').checked) localStorage.setItem(UNLOCK_KEY, appConfig.accessCode);
-  else sessionStorage.setItem(UNLOCK_KEY, appConfig.accessCode);
-  unlockApp();
-});
-
-$('showPasswordBtn').addEventListener('click', () => {
-  const input = $('passwordInput');
-  const showing = input.type === 'text';
-  input.type = showing ? 'password' : 'text';
-  $('showPasswordBtn').textContent = showing ? 'Show' : 'Hide';
-  input.focus();
-});
-
-$('lockBtn').addEventListener('click', lockApp);
-
-document.querySelectorAll('.add-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.addMode === mode));
+  document.querySelectorAll('.add-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.addMode === mode));
   document.querySelectorAll('.add-pane').forEach((pane) => pane.classList.toggle('hidden', pane.dataset.pane !== mode));
+  hideSuggestions();
   if (mode === 'bulk') $('bulkInput').focus();
   else $('titleInput').focus();
 }
+
+const fallbackMovieTitles = [
+  '12 Angry Men','Alien','Aliens','Amélie','Arrival','Avatar','Back to the Future','Barbie','Batman Begins','Black Panther',
+  'Blade Runner','Blade Runner 2049','Bridesmaids','Casablanca','Coco','Dune','Dune: Part Two','Everything Everywhere All at Once',
+  'Fight Club','Finding Nemo','Forrest Gump','Get Out','Gladiator','Goodfellas','Gone Girl','Groundhog Day','Her','Inception',
+  'Inside Out','Interstellar','Jaws','John Wick','Jurassic Park','Kill Bill: Vol. 1','Knives Out','La La Land','Lady Bird',
+  'Mad Max: Fury Road','Mean Girls','Memento','Moonlight','No Country for Old Men','Oppenheimer','Parasite','Pulp Fiction',
+  'Raiders of the Lost Ark','Ratatouille','Rear Window','Rocky','Shrek','Spider-Man: Into the Spider-Verse','Spirited Away',
+  'Star Wars','The Big Lebowski','The Dark Knight','The Departed','The Godfather','The Grand Budapest Hotel','The Green Mile',
+  'The Lord of the Rings: The Fellowship of the Ring','The Lord of the Rings: The Return of the King','The Matrix','The Menu',
+  'The Princess Bride','The Shawshank Redemption','The Shining','The Silence of the Lambs','The Social Network','The Thing',
+  'The Truman Show','Titanic','Toy Story','Up','Whiplash','Zodiac'
+];
+
+function normalizeTitle(value = '') {
+  return value.toLocaleLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function localSuggestions(query) {
+  const needle = normalizeTitle(query);
+  if (!needle) return [];
+  const pool = [...fallbackMovieTitles, ...state.movies.map((movie) => movie.title)];
+  const seen = new Set();
+  return pool
+    .filter((title) => {
+      const key = normalizeTitle(title);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return key.includes(needle) || needle.split(' ').every((part) => key.includes(part));
+    })
+    .sort((a, b) => {
+      const an = normalizeTitle(a); const bn = normalizeTitle(b);
+      return Number(!an.startsWith(needle)) - Number(!bn.startsWith(needle)) || a.localeCompare(b);
+    })
+    .slice(0, 7)
+    .map((title) => ({ title, release_date: '', id: null, source: 'local' }));
+}
+
+async function searchMovieTitles(query) {
+  const local = localSuggestions(query);
+  state.suggestionAbort?.abort();
+  state.suggestionAbort = new AbortController();
+  try {
+    const url = new URL('/api/movies', window.location.origin);
+    url.searchParams.set('query', query);
+    const response = await fetch(url, {
+      headers: { accept: 'application/json' },
+      signal: state.suggestionAbort.signal,
+    });
+    if (!response.ok) throw new Error(`Movie lookup ${response.status}`);
+    const data = await response.json();
+    const remote = (data.results || []).slice(0, 7).map((movie) => ({
+      id: movie.id,
+      title: movie.title,
+      original_title: movie.original_title,
+      release_date: movie.release_date || '',
+      source: 'tmdb',
+    }));
+    return remote.length ? remote : local;
+  } catch (error) {
+    if (error.name !== 'AbortError') console.warn('Movie lookup unavailable', error);
+    return local;
+  }
+}
+
+function hideSuggestions() {
+  $('movieSuggestions').classList.add('hidden');
+  $('movieSuggestions').innerHTML = '';
+  $('titleInput').setAttribute('aria-expanded', 'false');
+}
+
+function renderSuggestions(results, query) {
+  if (!$('titleInput').value.trim() || $('titleInput').value.trim() !== query) return;
+  if (!results.length) {
+    $('movieSuggestions').innerHTML = '<div class="suggestion-empty">No close matches. You can still add your typed title.</div>';
+  } else {
+    $('movieSuggestions').innerHTML = results.map((movie, index) => {
+      const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
+      const alternate = movie.original_title && movie.original_title !== movie.title ? ` · ${escapeHtml(movie.original_title)}` : '';
+      return `<button type="button" class="suggestion-item" role="option" data-index="${index}"><span><strong>${escapeHtml(movie.title)}</strong><small>${year || 'Movie'}${alternate}</small></span><b>＋</b></button>`;
+    }).join('');
+  }
+  $('movieSuggestions').dataset.results = JSON.stringify(results);
+  $('movieSuggestions').classList.remove('hidden');
+  $('titleInput').setAttribute('aria-expanded', 'true');
+}
+
+let suggestionTimer;
+$('titleInput').addEventListener('input', () => {
+  state.selectedSuggestion = null;
+  clearTimeout(suggestionTimer);
+  const query = $('titleInput').value.trim();
+  if (query.length < 2) return hideSuggestions();
+  suggestionTimer = setTimeout(async () => renderSuggestions(await searchMovieTitles(query), query), 260);
+});
+
+$('movieSuggestions').addEventListener('click', (event) => {
+  const button = event.target.closest('.suggestion-item');
+  if (!button) return;
+  const results = JSON.parse($('movieSuggestions').dataset.results || '[]');
+  const movie = results[Number(button.dataset.index)];
+  if (!movie) return;
+  state.selectedSuggestion = movie;
+  $('titleInput').value = movie.title;
+  hideSuggestions();
+  $('ownerInput').focus();
+});
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.autocomplete-field')) hideSuggestions();
+});
 
 function escapeHtml(value='') {
   return value.replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -399,12 +489,25 @@ $('bulkForm').addEventListener('submit', async (event) => {
 
 $('movieForm').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const title = $('titleInput').value.trim();
+  const title = (state.selectedSuggestion?.title || $('titleInput').value).trim();
   if (!title) return;
-  state.movies.push({ id: uid(), title, owner: $('ownerInput').value, genre: $('genreInput').value, watched: false });
+  const duplicate = state.movies.some((movie) => normalizeTitle(movie.title) === normalizeTitle(title));
+  if (duplicate) return toast(`${title} is already on the wheel`);
+  state.movies.push({
+    id: uid(),
+    title,
+    owner: $('ownerInput').value,
+    genre: $('genreInput').value,
+    watched: false,
+    tmdbId: state.selectedSuggestion?.id || null,
+    releaseYear: state.selectedSuggestion?.release_date?.slice(0, 4) || '',
+  });
   event.target.reset();
+  state.selectedSuggestion = null;
+  hideSuggestions();
   await syncState();
   render();
+  toast(`Added ${title}`);
 });
 
 $('movieList').addEventListener('click', async (event) => {

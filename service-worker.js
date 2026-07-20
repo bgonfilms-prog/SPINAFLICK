@@ -1,4 +1,4 @@
-const CACHE = 'reel-roulette-v2';
+const CACHE = 'reel-roulette-v3';
 const ASSETS = ['./','./index.html','./styles.css','./app.js','./firebase-config.js',
   './app-config.js','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));

@@ -82,7 +82,7 @@
         </div>
 
         <form id="movieForm" class="movie-form add-pane" data-pane="single">
-          <label class="field"><span>Movie title</span><input id="titleInput" name="title" maxlength="100" placeholder="e.g. The Grand Budapest Hotel" required /></label>
+          <label class="field autocomplete-field"><span>Movie title</span><div class="autocomplete-wrap"><input id="titleInput" name="title" maxlength="100" placeholder="Start typing a movie title…" autocomplete="off" aria-autocomplete="list" aria-controls="movieSuggestions" aria-expanded="false" required /><div id="movieSuggestions" class="suggestions hidden" role="listbox"></div></div><small id="lookupHint" class="lookup-hint">Type at least 2 letters for official movie suggestions.</small></label>
           <div class="form-grid">
             <label class="field"><span>Added by</span><select id="ownerInput" name="owner"><option value="Me">Me</option><option value="Partner">Partner</option></select></label>
             <label class="field"><span>Genre</span><select id="genreInput" name="genre"><option value="Any">Any genre</option><option>Action</option><option>Comedy</option><option>Drama</option><option>Horror</option><option>Romance</option><option>Sci-Fi</option><option>Thriller</option><option>Animation</option><option>Documentary</option><option>Mystery</option></select></label>
