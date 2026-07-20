@@ -1,4 +1,5 @@
 import { firebaseConfig } from './firebase-config.js';
+import { appConfig } from './app-config.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('wheel');
@@ -18,6 +19,30 @@ const state = {
 
 const palette = ['#8f7cff','#ff7189','#54d6c7','#ffcf5c','#72a7ff','#ff9b61','#9bdc68','#d98cff'];
 const STORAGE_KEY = 'movie-night-wheel-v1';
+const UNLOCK_KEY = 'reel-roulette-unlocked-v1';
+
+
+function unlockApp() {
+  document.body.classList.remove('locked');
+  $('lockScreen').classList.add('hidden');
+  $('passwordInput').value = '';
+  $('lockError').textContent = '';
+}
+
+function lockApp() {
+  sessionStorage.removeItem(UNLOCK_KEY);
+  localStorage.removeItem(UNLOCK_KEY);
+  document.body.classList.add('locked');
+  $('lockScreen').classList.remove('hidden');
+  $('passwordInput').focus();
+}
+
+function initializeAccessGate() {
+  const remembered = localStorage.getItem(UNLOCK_KEY) === appConfig.accessCode;
+  const sessionUnlocked = sessionStorage.getItem(UNLOCK_KEY) === appConfig.accessCode;
+  if (remembered || sessionUnlocked) unlockApp();
+  else setTimeout(() => $('passwordInput').focus(), 50);
+}
 
 function uid() {
   return crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -131,7 +156,9 @@ function drawWheel() {
 
 function render() {
   drawWheel();
-  $('movieCount').textContent = `${eligibleMovies().length} available`;
+  $('movieCount').textContent = `${state.movies.length} total`;
+  $('availableStat').textContent = eligibleMovies().length;
+  $('watchedStat').textContent = state.history.length;
 
   let movies = [...state.movies];
   if (state.filter === 'unwatched') movies = movies.filter((m) => !m.watched);
@@ -139,10 +166,13 @@ function render() {
   if (state.filter === 'partner') movies = movies.filter((m) => m.owner === 'Partner');
 
   $('movieList').innerHTML = movies.length ? movies.map((movie) => `
-    <article class="movie-item">
-      <div class="movie-meta">
+    <article class="movie-item ${movie.watched ? 'watched' : ''}">
+      <div class="movie-leading">
+        <span class="movie-number">${String(movies.indexOf(movie)+1).padStart(2,'0')}</span>
+        <div class="movie-meta">
         <strong>${escapeHtml(movie.title)}</strong>
         <small>${escapeHtml(movie.owner)} · ${escapeHtml(movie.genre || 'Any')}${movie.watched ? ' · Watched' : ''}</small>
+        </div>
       </div>
       <div class="item-actions">
         <button class="mini-button" data-action="toggle" data-id="${movie.id}" aria-label="Toggle watched">${movie.watched ? '↩' : '✓'}</button>
@@ -156,6 +186,53 @@ function render() {
       <div><strong>${escapeHtml(item.title)}</strong><small>${new Date(item.watchedAt).toLocaleDateString()}</small></div>
       <small>${escapeHtml(item.owner)}</small>
     </article>`).join('') : 'No movies watched yet.';
+}
+
+
+function parseBulkTitles(value = '') {
+  const seen = new Set();
+  return value
+    .split(/[\n,;]+/)
+    .map((title) => title.trim().replace(/^[-•*]\s*/, ''))
+    .filter((title) => {
+      if (!title) return false;
+      const key = title.toLocaleLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 250);
+}
+
+function switchAddMode(mode) {
+  
+$('unlockForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const entered = $('passwordInput').value;
+  if (entered !== appConfig.accessCode) {
+    $('lockError').textContent = 'That access code is not correct.';
+    $('passwordInput').select();
+    return;
+  }
+  if ($('rememberDevice').checked) localStorage.setItem(UNLOCK_KEY, appConfig.accessCode);
+  else sessionStorage.setItem(UNLOCK_KEY, appConfig.accessCode);
+  unlockApp();
+});
+
+$('showPasswordBtn').addEventListener('click', () => {
+  const input = $('passwordInput');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  $('showPasswordBtn').textContent = showing ? 'Show' : 'Hide';
+  input.focus();
+});
+
+$('lockBtn').addEventListener('click', lockApp);
+
+document.querySelectorAll('.add-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.addMode === mode));
+  document.querySelectorAll('.add-pane').forEach((pane) => pane.classList.toggle('hidden', pane.dataset.pane !== mode));
+  if (mode === 'bulk') $('bulkInput').focus();
+  else $('titleInput').focus();
 }
 
 function escapeHtml(value='') {
@@ -268,6 +345,58 @@ async function joinRoom(roomCode) {
   toast('Joined live room');
 }
 
+
+
+
+$('unlockForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const entered = $('passwordInput').value;
+  if (entered !== appConfig.accessCode) {
+    $('lockError').textContent = 'That access code is not correct.';
+    $('passwordInput').select();
+    return;
+  }
+  if ($('rememberDevice').checked) localStorage.setItem(UNLOCK_KEY, appConfig.accessCode);
+  else sessionStorage.setItem(UNLOCK_KEY, appConfig.accessCode);
+  unlockApp();
+});
+
+$('showPasswordBtn').addEventListener('click', () => {
+  const input = $('passwordInput');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  $('showPasswordBtn').textContent = showing ? 'Show' : 'Hide';
+  input.focus();
+});
+
+$('lockBtn').addEventListener('click', lockApp);
+
+document.querySelectorAll('.add-tab').forEach((tab) => tab.addEventListener('click', () => switchAddMode(tab.dataset.addMode)));
+
+$('bulkInput').addEventListener('input', () => {
+  const count = parseBulkTitles($('bulkInput').value).length;
+  $('bulkPreview').textContent = `${count} title${count === 1 ? '' : 's'} detected`;
+});
+
+$('bulkForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const titles = parseBulkTitles($('bulkInput').value);
+  if (!titles.length) return toast('Paste at least one movie title');
+
+  const existing = new Set(state.movies.map((movie) => movie.title.trim().toLocaleLowerCase()));
+  const newTitles = titles.filter((title) => !existing.has(title.toLocaleLowerCase()));
+  const duplicateCount = titles.length - newTitles.length;
+  const owner = $('bulkOwnerInput').value;
+  const genre = $('bulkGenreInput').value;
+  state.movies.push(...newTitles.map((title) => ({ id: uid(), title, owner, genre, watched: false })));
+  $('bulkInput').value = '';
+  $('bulkPreview').textContent = '0 titles detected';
+  await syncState();
+  render();
+  if (!newTitles.length) toast('Those movies are already on the list');
+  else toast(`Added ${newTitles.length} movie${newTitles.length === 1 ? '' : 's'}${duplicateCount ? ` · skipped ${duplicateCount} duplicate${duplicateCount === 1 ? '' : 's'}` : ''}`);
+});
+
 $('movieForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   const title = $('titleInput').value.trim();
@@ -320,6 +449,7 @@ $('roomBtn').addEventListener('click', () => $('roomDialog').showModal());
 $('joinRoomBtn').addEventListener('click', () => joinRoom($('roomCodeInput').value));
 $('copyInviteBtn').addEventListener('click', copyShare);
 
+initializeAccessGate();
 loadLocal();
 await setupFirebase();
 const initialRoom = new URLSearchParams(location.search).get('room');

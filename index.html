@@ -3,42 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#12162a" />
+  <meta name="theme-color" content="#090b12" />
   <meta name="description" content="A private movie-night wheel for two people." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
-  <title>Movie Night Wheel</title>
+  <title>Reel Roulette</title>
 </head>
-<body>
+<body class="locked">
+  <section id="lockScreen" class="lock-screen" aria-labelledby="lockTitle">
+    <div class="lock-orb lock-orb-one"></div><div class="lock-orb lock-orb-two"></div>
+    <form id="unlockForm" class="lock-card">
+      <div class="lock-logo">▶</div>
+      <p class="eyebrow">PRIVATE MOVIE NIGHT</p>
+      <h1 id="lockTitle">Your next favorite movie is one spin away.</h1>
+      <p class="lock-copy">Enter your shared access code to open Reel Roulette.</p>
+      <label class="field lock-field"><span>Access code</span><div class="password-wrap"><input id="passwordInput" type="password" autocomplete="current-password" placeholder="Enter access code" required /><button id="showPasswordBtn" class="password-toggle" type="button" aria-label="Show access code">Show</button></div></label>
+      <label class="remember-row"><input id="rememberDevice" type="checkbox" checked /><span>Remember this device</span></label>
+      <button class="primary-button full unlock-button" type="submit">Unlock app <span>→</span></button>
+      <p id="lockError" class="lock-error" role="alert" aria-live="polite"></p>
+      <small class="privacy-note">Only share the link and access code with your partner.</small>
+    </form>
+  </section>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <div class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">TONIGHT'S PICK</p>
-        <h1>Movie Night Wheel</h1>
-      </div>
-      <button id="shareBtn" class="icon-button" aria-label="Share app">Share</button>
+      <a class="brand" href="#top" aria-label="Reel Roulette home">
+        <span class="brand-mark">▶</span>
+        <span><small>MOVIE NIGHT</small><strong>Reel Roulette</strong></span>
+      </a>
+      <div class="topbar-actions"><button id="lockBtn" class="ghost-button icon-button" aria-label="Lock app" title="Lock app">⌁</button><button id="shareBtn" class="ghost-button" aria-label="Share app"><span>↗</span> Share</button></div>
     </header>
 
-    <main>
+    <main id="top">
       <section class="hero-card">
-        <div class="room-row">
+        <div class="hero-header">
           <div>
-            <span class="status-dot" id="syncDot"></span>
-            <span id="syncLabel">Local mode</span>
+            <p class="eyebrow">TONIGHT'S PICK</p>
+            <h1>Leave the choice<br><span>to the wheel.</span></h1>
           </div>
-          <button id="roomBtn" class="text-button">Create shared room</button>
+          <div class="sync-pill"><span class="status-dot" id="syncDot"></span><span id="syncLabel">Saved on this device</span></div>
         </div>
 
-        <div class="wheel-wrap" aria-label="Movie selection wheel">
-          <canvas id="wheel" width="700" height="700"></canvas>
-          <div class="pointer" aria-hidden="true"></div>
-          <button id="spinBtn" class="spin-button">SPIN</button>
+        <div class="wheel-stage">
+          <div class="wheel-glow"></div>
+          <div class="wheel-wrap" aria-label="Movie selection wheel">
+            <canvas id="wheel" width="800" height="800"></canvas>
+            <div class="pointer" aria-hidden="true"></div>
+            <button id="spinBtn" class="spin-button"><span>SPIN</span><small>the wheel</small></button>
+          </div>
+        </div>
+
+        <div class="hero-footer">
+          <div class="mini-stat"><strong id="availableStat">0</strong><span>ready to spin</span></div>
+          <button id="roomBtn" class="room-button"><span>◉</span> Create shared room</button>
+          <div class="mini-stat align-right"><strong id="watchedStat">0</strong><span>watched</span></div>
         </div>
 
         <div id="resultCard" class="result-card hidden" role="status" aria-live="polite">
-          <span>Tonight we're watching</span>
-          <strong id="resultTitle"></strong>
+          <div class="result-icon">★</div>
+          <div><span>Tonight we're watching</span><strong id="resultTitle"></strong></div>
           <div class="result-actions">
             <button id="markWatchedBtn" class="primary-button">Mark watched</button>
             <button id="spinAgainBtn" class="secondary-button">Spin again</button>
@@ -46,89 +70,53 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel library-panel">
         <div class="panel-heading">
-          <div>
-            <p class="eyebrow">MOVIE POOL</p>
-            <h2>Add a movie</h2>
-          </div>
+          <div><p class="eyebrow">YOUR COLLECTION</p><h2>Movie pool</h2></div>
           <span id="movieCount" class="count-pill">0 movies</span>
         </div>
 
-        <form id="movieForm" class="movie-form">
-          <label>
-            Movie title
-            <input id="titleInput" name="title" maxlength="80" placeholder="e.g. Interstellar" required />
-          </label>
-          <div class="form-grid">
-            <label>
-              Added by
-              <select id="ownerInput" name="owner">
-                <option value="Me">Me</option>
-                <option value="Partner">Partner</option>
-              </select>
-            </label>
-            <label>
-              Genre
-              <select id="genreInput" name="genre">
-                <option value="Any">Any</option>
-                <option>Action</option>
-                <option>Comedy</option>
-                <option>Drama</option>
-                <option>Horror</option>
-                <option>Romance</option>
-                <option>Sci-Fi</option>
-                <option>Thriller</option>
-                <option>Animation</option>
-                <option>Documentary</option>
-              </select>
-            </label>
-          </div>
-          <button class="primary-button full" type="submit">Add to wheel</button>
-        </form>
-
-        <div class="filter-row">
-          <button class="filter-chip active" data-filter="all">All</button>
-          <button class="filter-chip" data-filter="unwatched">Unwatched</button>
-          <button class="filter-chip" data-filter="mine">Mine</button>
-          <button class="filter-chip" data-filter="partner">Partner's</button>
+        <div class="add-mode-tabs" role="tablist" aria-label="Add movies">
+          <button class="add-tab active" data-add-mode="single" role="tab">Add one</button>
+          <button class="add-tab" data-add-mode="bulk" role="tab">Bulk add</button>
         </div>
 
+        <form id="movieForm" class="movie-form add-pane" data-pane="single">
+          <label class="field"><span>Movie title</span><input id="titleInput" name="title" maxlength="100" placeholder="e.g. The Grand Budapest Hotel" required /></label>
+          <div class="form-grid">
+            <label class="field"><span>Added by</span><select id="ownerInput" name="owner"><option value="Me">Me</option><option value="Partner">Partner</option></select></label>
+            <label class="field"><span>Genre</span><select id="genreInput" name="genre"><option value="Any">Any genre</option><option>Action</option><option>Comedy</option><option>Drama</option><option>Horror</option><option>Romance</option><option>Sci-Fi</option><option>Thriller</option><option>Animation</option><option>Documentary</option><option>Mystery</option></select></label>
+          </div>
+          <button class="primary-button full" type="submit">＋ Add to wheel</button>
+        </form>
+
+        <form id="bulkForm" class="movie-form add-pane hidden" data-pane="bulk">
+          <label class="field"><span>Movie titles</span><textarea id="bulkInput" rows="7" placeholder="Paste one movie per line, or separate titles with commas:&#10;&#10;Alien&#10;The Thing&#10;Knives Out"></textarea></label>
+          <div class="bulk-hint"><span>One per line or comma-separated</span><span id="bulkPreview">0 titles detected</span></div>
+          <div class="form-grid">
+            <label class="field"><span>Added by</span><select id="bulkOwnerInput"><option value="Me">Me</option><option value="Partner">Partner</option></select></label>
+            <label class="field"><span>Genre for all</span><select id="bulkGenreInput"><option value="Any">Any genre</option><option>Action</option><option>Comedy</option><option>Drama</option><option>Horror</option><option>Romance</option><option>Sci-Fi</option><option>Thriller</option><option>Animation</option><option>Documentary</option><option>Mystery</option></select></label>
+          </div>
+          <button class="primary-button full" type="submit">＋ Add all movies</button>
+        </form>
+
+        <div class="list-toolbar">
+          <div class="filter-row">
+            <button class="filter-chip active" data-filter="all">All</button><button class="filter-chip" data-filter="unwatched">Unwatched</button><button class="filter-chip" data-filter="mine">Mine</button><button class="filter-chip" data-filter="partner">Partner's</button>
+          </div>
+        </div>
         <div id="movieList" class="movie-list"></div>
       </section>
 
       <section class="panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">HISTORY</p>
-            <h2>Watched movies</h2>
-          </div>
-          <button id="clearHistoryBtn" class="text-button danger">Clear</button>
-        </div>
+        <div class="panel-heading"><div><p class="eyebrow">RECENT PICKS</p><h2>Watch history</h2></div><button id="clearHistoryBtn" class="text-button danger">Clear history</button></div>
         <div id="historyList" class="history-list empty-state">No movies watched yet.</div>
       </section>
     </main>
   </div>
 
-  <dialog id="roomDialog">
-    <form method="dialog" class="dialog-card">
-      <button class="dialog-close" value="cancel" aria-label="Close">×</button>
-      <p class="eyebrow">SHARED ROOM</p>
-      <h2>Watch together</h2>
-      <p class="muted">Paste your Firebase configuration into <code>firebase-config.js</code> to enable live syncing. Without it, invite links share a snapshot of the current movie list.</p>
-      <label>
-        Room code
-        <input id="roomCodeInput" maxlength="18" placeholder="movie-night" />
-      </label>
-      <div class="dialog-actions">
-        <button id="joinRoomBtn" type="button" class="primary-button">Join room</button>
-        <button id="copyInviteBtn" type="button" class="secondary-button">Copy invite</button>
-      </div>
-    </form>
-  </dialog>
-
+  <dialog id="roomDialog"><form method="dialog" class="dialog-card"><button class="dialog-close" value="cancel" aria-label="Close">×</button><div class="dialog-icon">◉</div><p class="eyebrow">SHARED ROOM</p><h2>Build the list together</h2><p class="muted">Invite links share your current list. Add the free Firebase setup in <code>firebase-config.js</code> for live syncing on both phones.</p><label class="field"><span>Room code</span><input id="roomCodeInput" maxlength="18" placeholder="friday-night" /></label><div class="dialog-actions"><button id="joinRoomBtn" type="button" class="primary-button">Join room</button><button id="copyInviteBtn" type="button" class="secondary-button">Copy invite</button></div></form></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
   <script type="module" src="app.js"></script>
 </body>
 </html>
