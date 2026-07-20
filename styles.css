@@ -1,0 +1,85 @@
+:root {
+  color-scheme: dark;
+  --bg: #0c1020;
+  --panel: rgba(22, 28, 52, 0.88);
+  --panel-strong: #171d36;
+  --text: #f7f8ff;
+  --muted: #aeb6d3;
+  --accent: #ffcf5c;
+  --accent-2: #8f7cff;
+  --danger: #ff7189;
+  --border: rgba(255,255,255,0.1);
+  --shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(143,124,255,.25), transparent 32%),
+    radial-gradient(circle at top left, rgba(255,207,92,.14), transparent 30%),
+    var(--bg);
+  color: var(--text);
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.app-shell { width: min(100%, 820px); margin: 0 auto; padding: 20px 16px 48px; }
+.topbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; }
+h1,h2,p { margin-top:0; }
+h1 { font-size: clamp(1.55rem, 5vw, 2.25rem); margin-bottom:0; }
+h2 { font-size:1.25rem; margin-bottom:0; }
+.eyebrow { color:var(--accent); font-size:.72rem; letter-spacing:.18em; font-weight:800; margin-bottom:4px; }
+.icon-button,.text-button,.filter-chip,.secondary-button,.primary-button { border:0; border-radius:14px; }
+.icon-button { background:var(--panel); color:var(--text); border:1px solid var(--border); padding:11px 14px; }
+.hero-card,.panel { background:var(--panel); border:1px solid var(--border); border-radius:26px; box-shadow:var(--shadow); backdrop-filter: blur(18px); }
+.hero-card { padding:16px; margin-bottom:18px; }
+.panel { padding:18px; margin-bottom:18px; }
+.room-row,.panel-heading,.filter-row,.result-actions,.dialog-actions { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.room-row { color:var(--muted); font-size:.9rem; }
+.status-dot { width:9px; height:9px; border-radius:50%; display:inline-block; background:#7f8aa8; margin-right:7px; }
+.status-dot.live { background:#54e39c; box-shadow:0 0 12px rgba(84,227,156,.75); }
+.text-button { background:transparent; color:var(--accent); padding:8px; }
+.text-button.danger { color:var(--danger); }
+.wheel-wrap { width:min(86vw, 520px); aspect-ratio:1; margin:22px auto 12px; position:relative; display:grid; place-items:center; }
+#wheel { width:100%; height:100%; filter: drop-shadow(0 18px 30px rgba(0,0,0,.35)); }
+.pointer { position:absolute; top:-2px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:17px solid transparent; border-right:17px solid transparent; border-top:0; border-bottom:34px solid var(--accent); z-index:3; filter:drop-shadow(0 4px 3px rgba(0,0,0,.35)); }
+.spin-button { position:absolute; width:28%; aspect-ratio:1; border-radius:50%; border:8px solid rgba(255,255,255,.12); background:linear-gradient(145deg,var(--accent),#f3a92d); color:#241c08; font-weight:1000; letter-spacing:.08em; font-size:clamp(.9rem,4vw,1.2rem); box-shadow:0 12px 30px rgba(0,0,0,.35); }
+.spin-button:disabled { opacity:.55; cursor:not-allowed; }
+.result-card { background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:20px; padding:16px; text-align:center; }
+.result-card span { color:var(--muted); display:block; }
+.result-card strong { display:block; font-size:1.6rem; margin:4px 0 14px; }
+.hidden { display:none; }
+.primary-button,.secondary-button { padding:12px 16px; font-weight:800; }
+.primary-button { background:var(--accent); color:#251d08; }
+.secondary-button { background:rgba(255,255,255,.09); color:var(--text); border:1px solid var(--border); }
+.full { width:100%; }
+.count-pill { background:rgba(255,255,255,.08); border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:7px 10px; font-size:.82rem; }
+.movie-form { margin-top:18px; }
+label { display:block; color:var(--muted); font-size:.86rem; font-weight:700; }
+input,select { width:100%; margin-top:7px; margin-bottom:13px; padding:13px 14px; color:var(--text); background:#0f1428; border:1px solid var(--border); border-radius:14px; outline:none; }
+input:focus,select:focus { border-color:var(--accent-2); box-shadow:0 0 0 3px rgba(143,124,255,.18); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.filter-row { justify-content:flex-start; overflow:auto; padding:18px 0 12px; }
+.filter-chip { white-space:nowrap; padding:9px 12px; background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--border); }
+.filter-chip.active { background:var(--accent-2); color:white; }
+.movie-list,.history-list { display:grid; gap:10px; }
+.movie-item,.history-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px; border-radius:16px; background:rgba(255,255,255,.05); border:1px solid var(--border); }
+.movie-meta strong,.history-item strong { display:block; }
+.movie-meta small,.history-item small { color:var(--muted); }
+.item-actions { display:flex; gap:7px; }
+.mini-button { border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--text); border-radius:10px; padding:7px 9px; }
+.empty-state { color:var(--muted); text-align:center; padding:20px 8px; }
+dialog { border:0; padding:0; background:transparent; color:var(--text); }
+dialog::backdrop { background:rgba(4,7,18,.78); backdrop-filter:blur(7px); }
+.dialog-card { width:min(92vw,480px); background:var(--panel-strong); border:1px solid var(--border); border-radius:24px; padding:22px; box-shadow:var(--shadow); position:relative; }
+.dialog-close { position:absolute; top:10px; right:12px; border:0; background:transparent; color:var(--muted); font-size:1.8rem; }
+.muted { color:var(--muted); line-height:1.55; }
+code { color:var(--accent); }
+.toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); background:#f8f8ff; color:#12162a; padding:11px 16px; border-radius:999px; opacity:0; pointer-events:none; transition:.25s ease; box-shadow:var(--shadow); font-weight:800; z-index:20; }
+.toast.show { opacity:1; transform:translate(-50%,0); }
+@media (max-width:540px) {
+  .form-grid { grid-template-columns:1fr; gap:0; }
+  .result-actions,.dialog-actions { flex-direction:column; }
+  .result-actions button,.dialog-actions button { width:100%; }
+}

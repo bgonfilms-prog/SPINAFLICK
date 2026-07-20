@@ -1,0 +1,12 @@
+{
+  "name": "Movie Night Wheel",
+  "short_name": "Movie Wheel",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0c1020",
+  "theme_color": "#12162a",
+  "description": "A private shared movie-night picker for two people.",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
